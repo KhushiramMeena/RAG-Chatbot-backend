@@ -17,9 +17,15 @@ const { initializeNewsIngestion } = require("./services/newsIngestion");
 
 const app = express();
 const server = http.createServer(app);
+const allowedOrigins = [
+  process.env.FRONTEND_URL || "http://localhost:3000",
+  "https://rag-chatbot-hglp.onrender.com",
+  "https://rag-chatbot-frontend.onrender.com"
+];
+
 const io = socketIo(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    origin: allowedOrigins,
     methods: ["GET", "POST"],
   },
 });
@@ -42,9 +48,15 @@ const limiter = rateLimit({
 app.use("/api/", limiter);
 
 // CORS configuration
+const allowedOrigins = [
+  process.env.FRONTEND_URL || "http://localhost:3000",
+  "https://rag-chatbot-hglp.onrender.com",
+  "https://rag-chatbot-frontend.onrender.com"
+];
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    origin: allowedOrigins,
     credentials: true,
   })
 );
