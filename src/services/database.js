@@ -1,26 +1,38 @@
 const mysql = require("mysql2/promise");
+const { Pool } = require("pg");
 
 let dbConnection = null;
 
 const initializeDatabase = async () => {
   try {
     // Check if database configuration is provided
-    if (!process.env.DB_HOST || !process.env.DB_USER) {
+    if (!process.env.DB_HOST && !process.env.DATABASE_URL) {
       console.log(
         "Database configuration not provided, skipping database initialization"
       );
       return null;
     }
 
-    dbConnection = await mysql.createConnection({
-      host: process.env.DB_HOST,
-      port: process.env.DB_PORT || 3306,
-      user: process.env.DB_USER,
-      password: process.env.DB_PASSWORD || "",
-      database: process.env.DB_NAME || "news_chatbot",
-    });
-
-    console.log("Connected to MySQL database");
+    // Use PostgreSQL if DATABASE_URL is provided (Render), otherwise MySQL
+    if (process.env.DATABASE_URL) {
+      dbConnection = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl:
+          process.env.NODE_ENV === "production"
+            ? { rejectUnauthorized: false }
+            : false,
+      });
+      console.log("Connected to PostgreSQL database");
+    } else {
+      dbConnection = await mysql.createConnection({
+        host: process.env.DB_HOST,
+        port: process.env.DB_PORT || 3306,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD || "",
+        database: process.env.DB_NAME || "news_chatbot",
+      });
+      console.log("Connected to MySQL database");
+    }
 
     // Create tables if they don't exist
     await createTables();
