@@ -1,26 +1,23 @@
-const mysql = require("mysql2/promise");
+const { Pool } = require("pg");
 
 let dbConnection = null;
 
 const initializeDatabase = async () => {
   try {
     // Check if database configuration is provided
-    if (!process.env.DB_HOST || !process.env.DB_USER) {
+    if (!process.env.DATABASE_URL) {
       console.log(
         "Database configuration not provided, skipping database initialization"
       );
       return null;
     }
 
-    dbConnection = await mysql.createConnection({
-      host: process.env.DB_HOST,
-      port: process.env.DB_PORT || 3306,
-      user: process.env.DB_USER,
-      password: process.env.DB_PASSWORD || "",
-      database: process.env.DB_NAME || "news_chatbot",
+    dbConnection = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
     });
 
-    console.log("Connected to MySQL database");
+    console.log("Connected to PostgreSQL database");
 
     // Create tables if they don't exist
     await createTables();
@@ -28,7 +25,6 @@ const initializeDatabase = async () => {
     return dbConnection;
   } catch (error) {
     console.error("Failed to connect to database:", error);
-    // Don't throw error to prevent server startup failure
     return null;
   }
 };
@@ -38,31 +34,31 @@ const createTables = async () => {
 
   try {
     // Create sessions table
-    await dbConnection.execute(`
+    await dbConnection.query(`
       CREATE TABLE IF NOT EXISTS sessions (
         id VARCHAR(255) PRIMARY KEY,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        message_count INT DEFAULT 0,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        message_count INTEGER DEFAULT 0,
         last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
     // Create messages table
-    await dbConnection.execute(`
+    await dbConnection.query(`
       CREATE TABLE IF NOT EXISTS messages (
         id VARCHAR(255) PRIMARY KEY,
         session_id VARCHAR(255) NOT NULL,
-        role ENUM('user', 'assistant') NOT NULL,
+        role VARCHAR(20) CHECK (role IN ('user', 'assistant')) NOT NULL,
         content TEXT NOT NULL,
-        sources JSON,
+        sources JSONB,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
       )
     `);
 
     // Create articles table (for persistence)
-    await dbConnection.execute(`
+    await dbConnection.query(`
       CREATE TABLE IF NOT EXISTS articles (
         id VARCHAR(255) PRIMARY KEY,
         title VARCHAR(500) NOT NULL,
@@ -70,12 +66,14 @@ const createTables = async () => {
         url VARCHAR(1000) NOT NULL,
         source VARCHAR(255) NOT NULL,
         published_at TIMESTAMP,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_title (title(100)),
-        INDEX idx_source (source),
-        INDEX idx_published_at (published_at)
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    // Create indexes
+    await dbConnection.query(`CREATE INDEX IF NOT EXISTS idx_title ON articles (title)`);
+    await dbConnection.query(`CREATE INDEX IF NOT EXISTS idx_source ON articles (source)`);
+    await dbConnection.query(`CREATE INDEX IF NOT EXISTS idx_published_at ON articles (published_at)`);
 
     console.log("Database tables created/verified");
   } catch (error) {
@@ -92,9 +90,9 @@ const saveSession = async (sessionId, sessionData) => {
   if (!dbConnection) return;
 
   try {
-    await dbConnection.execute(
-      "INSERT INTO sessions (id, message_count, last_activity) VALUES (?, ?, NOW()) ON DUPLICATE KEY UPDATE message_count = ?, last_activity = NOW()",
-      [sessionId, sessionData.messages.length, sessionData.messages.length]
+    await dbConnection.query(
+      "INSERT INTO sessions (id, message_count, last_activity) VALUES ($1, $2, NOW()) ON CONFLICT (id) DO UPDATE SET message_count = $2, last_activity = NOW()",
+      [sessionId, sessionData.messages.length]
     );
   } catch (error) {
     console.error("Error saving session:", error);
@@ -235,6 +233,24 @@ const cleanupOldData = async (daysOld = 30) => {
   }
 };
 
+// Clear all data from database
+const clearDatabase = async () => {
+  try {
+    const db = getDatabaseConnection();
+
+    // Clear all tables
+    await db.query("DELETE FROM messages");
+    await db.query("DELETE FROM sessions");
+    await db.query("DELETE FROM articles");
+
+    console.log("Database cleared successfully");
+    return { success: true };
+  } catch (error) {
+    console.error("Error clearing database:", error);
+    throw error;
+  }
+};
+
 module.exports = {
   initializeDatabase,
   getDatabaseConnection,
@@ -245,4 +261,5 @@ module.exports = {
   getArticles,
   getSessionStats,
   cleanupOldData,
+  clearDatabase,
 };

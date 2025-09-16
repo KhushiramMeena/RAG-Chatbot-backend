@@ -90,6 +90,25 @@ app.post("/api/admin/ingest-news", async (req, res) => {
   }
 });
 
+// Clear database endpoint
+app.post("/api/admin/clear-database", async (req, res) => {
+  try {
+    console.log("Clearing database...");
+    const { clearDatabase } = require("./services/database");
+    await clearDatabase();
+    res.json({
+      success: true,
+      message: "Database cleared successfully",
+    });
+  } catch (error) {
+    console.error("Failed to clear database:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
 // API routes
 app.use("/api/chat", chatRoutes);
 app.use("/api/session", sessionRoutes);
