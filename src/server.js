@@ -71,6 +71,25 @@ app.get("/health", (req, res) => {
   });
 });
 
+// Manual news ingestion endpoint
+app.post("/api/admin/ingest-news", async (req, res) => {
+  try {
+    console.log("Manual news ingestion triggered");
+    const { initializeNewsIngestion } = require("./services/newsIngestion");
+    await initializeNewsIngestion();
+    res.json({
+      success: true,
+      message: "News ingestion completed successfully",
+    });
+  } catch (error) {
+    console.error("Manual news ingestion failed:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
 // API routes
 app.use("/api/chat", chatRoutes);
 app.use("/api/session", sessionRoutes);
