@@ -14,7 +14,10 @@ const initializeDatabase = async () => {
 
     dbConnection = new Pool({
       connectionString: process.env.DATABASE_URL,
-      ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
+      ssl:
+        process.env.NODE_ENV === "production"
+          ? { rejectUnauthorized: false }
+          : false,
     });
 
     console.log("Connected to PostgreSQL database");
@@ -71,9 +74,15 @@ const createTables = async () => {
     `);
 
     // Create indexes
-    await dbConnection.query(`CREATE INDEX IF NOT EXISTS idx_title ON articles (title)`);
-    await dbConnection.query(`CREATE INDEX IF NOT EXISTS idx_source ON articles (source)`);
-    await dbConnection.query(`CREATE INDEX IF NOT EXISTS idx_published_at ON articles (published_at)`);
+    await dbConnection.query(
+      `CREATE INDEX IF NOT EXISTS idx_title ON articles (title)`
+    );
+    await dbConnection.query(
+      `CREATE INDEX IF NOT EXISTS idx_source ON articles (source)`
+    );
+    await dbConnection.query(
+      `CREATE INDEX IF NOT EXISTS idx_published_at ON articles (published_at)`
+    );
 
     console.log("Database tables created/verified");
   } catch (error) {
