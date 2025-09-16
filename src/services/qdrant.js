@@ -76,15 +76,18 @@ const createCollection = async () => {
 };
 
 const getQdrantClient = () => {
-  if (!qdrantClient) {
-    throw new Error("Qdrant client not initialized");
-  }
-  return qdrantClient;
+  return qdrantClient; // Return null if not initialized instead of throwing
 };
 
 // Add document to vector store
 const addDocument = async (document) => {
   const client = getQdrantClient();
+
+  // Skip if Qdrant is not available
+  if (!client) {
+    console.warn("⚠️  Qdrant not available. Skipping document addition.");
+    return;
+  }
 
   try {
     const payload = {
@@ -108,13 +111,19 @@ const addDocument = async (document) => {
     console.log(`Added document: ${document.id}`);
   } catch (error) {
     console.error("Error adding document:", error);
-    throw error;
+    // Don't throw error, just log it
   }
 };
 
 // Add multiple documents
 const addDocuments = async (documents) => {
   const client = getQdrantClient();
+
+  // Skip if Qdrant is not available
+  if (!client) {
+    console.warn("⚠️  Qdrant not available. Skipping document addition.");
+    return;
+  }
 
   try {
     const points = documents.map((doc) => ({
@@ -136,7 +145,7 @@ const addDocuments = async (documents) => {
     console.log(`Added ${documents.length} documents`);
   } catch (error) {
     console.error("Error adding documents:", error);
-    throw error;
+    // Don't throw error, just log it
   }
 };
 
