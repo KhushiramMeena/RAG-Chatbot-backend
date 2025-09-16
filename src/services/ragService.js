@@ -26,13 +26,23 @@ const processQuery = async (query, sessionId, sessionHistory = []) => {
     const similarDocs = await searchSimilar(queryEmbedding, 5, 0.7);
 
     if (similarDocs.length === 0) {
-      console.log("No similar documents found");
-      return {
-        response:
-          "I couldn't find any relevant news articles to answer your question. Please try rephrasing your query or ask about a different topic.",
-        sources: [],
+      console.log("No similar documents found, generating general AI response");
+      // Generate AI response even without relevant articles
+      const result = await generateResponse(query, [], sessionHistory);
+      
+      const finalResult = {
+        ...result,
+        query: query,
+        sessionId: sessionId,
+        timestamp: new Date().toISOString(),
         cached: false,
+        sources: result.sources || [],
+        note: "No relevant news articles found, but here's an AI-generated response"
       };
+
+      // Cache the result
+      await setCache(cacheKey, finalResult, 1800); // 30 minutes
+      return finalResult;
     }
 
     console.log(`Found ${similarDocs.length} similar documents`);
