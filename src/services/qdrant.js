@@ -8,6 +8,12 @@ const initializeQdrant = async () => {
     const qdrantUrl = process.env.QDRANT_URL || "http://localhost:6333";
     const apiKey = process.env.QDRANT_API_KEY;
 
+    // Check if URL is valid
+    if (!qdrantUrl || qdrantUrl.includes('[your') || qdrantUrl.includes('placeholder')) {
+      console.warn("⚠️  QDRANT_URL not configured properly. Using fallback mode.");
+      return null;
+    }
+
     qdrantClient = axios.create({
       baseURL: qdrantUrl,
       headers: {
@@ -18,15 +24,15 @@ const initializeQdrant = async () => {
 
     // Test connection
     await qdrantClient.get("/collections");
-    console.log("Connected to Qdrant");
+    console.log("✓ Qdrant connected");
 
     // Create collection if it doesn't exist
     await createCollection();
 
     return qdrantClient;
   } catch (error) {
-    console.error("Failed to connect to Qdrant:", error);
-    throw error;
+    console.warn("⚠️  Failed to connect to Qdrant. Using fallback mode:", error.message);
+    return null;
   }
 };
 
@@ -133,6 +139,12 @@ const searchSimilar = async (
 ) => {
   const client = getQdrantClient();
 
+  // Return empty array if Qdrant is not available
+  if (!client) {
+    console.warn("⚠️  Qdrant not available. Returning empty search results.");
+    return [];
+  }
+
   try {
     const payload = {
       vector: queryEmbedding,
@@ -158,7 +170,7 @@ const searchSimilar = async (
     }));
   } catch (error) {
     console.error("Error searching documents:", error);
-    throw error;
+    return []; // Return empty array instead of throwing
   }
 };
 
