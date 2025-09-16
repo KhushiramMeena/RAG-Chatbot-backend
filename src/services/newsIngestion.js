@@ -205,16 +205,8 @@ const ingestNews = async (feedUrls = null) => {
 // Initialize news ingestion (run on startup)
 const initializeNewsIngestion = async () => {
   try {
-    // Check if we already have recent articles
-    const { getCache } = require("./redis");
-    const cachedArticles = await getCache("latest_articles");
-
-    if (cachedArticles && cachedArticles.length > 0) {
-      console.log(`Using cached articles: ${cachedArticles.length}`);
-      return cachedArticles;
-    }
-
-    // Run ingestion
+    // Always run fresh ingestion to ensure Qdrant is properly indexed
+    console.log("Running fresh news ingestion to ensure Qdrant indexing...");
     return await ingestNews();
   } catch (error) {
     console.error("Error initializing news ingestion:", error);
