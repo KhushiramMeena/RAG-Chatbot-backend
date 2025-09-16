@@ -9,8 +9,14 @@ const initializeQdrant = async () => {
     const apiKey = process.env.QDRANT_API_KEY;
 
     // Check if URL is valid
-    if (!qdrantUrl || qdrantUrl.includes('[your') || qdrantUrl.includes('placeholder')) {
-      console.warn("⚠️  QDRANT_URL not configured properly. Using fallback mode.");
+    if (
+      !qdrantUrl ||
+      qdrantUrl.includes("[your") ||
+      qdrantUrl.includes("placeholder")
+    ) {
+      console.warn(
+        "⚠️  QDRANT_URL not configured properly. Using fallback mode."
+      );
       return null;
     }
 
@@ -31,7 +37,10 @@ const initializeQdrant = async () => {
 
     return qdrantClient;
   } catch (error) {
-    console.warn("⚠️  Failed to connect to Qdrant. Using fallback mode:", error.message);
+    console.warn(
+      "⚠️  Failed to connect to Qdrant. Using fallback mode:",
+      error.message
+    );
     return null;
   }
 };
