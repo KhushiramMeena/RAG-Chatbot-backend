@@ -20,7 +20,7 @@ const server = http.createServer(app);
 const allowedOrigins = [
   process.env.FRONTEND_URL || "http://localhost:3000",
   "https://rag-chatbot-hglp.onrender.com",
-  "https://rag-chatbot-frontend.onrender.com"
+  "https://rag-chatbot-frontend.onrender.com",
 ];
 
 const io = socketIo(server, {
@@ -48,12 +48,6 @@ const limiter = rateLimit({
 app.use("/api/", limiter);
 
 // CORS configuration
-const allowedOrigins = [
-  process.env.FRONTEND_URL || "http://localhost:3000",
-  "https://rag-chatbot-hglp.onrender.com",
-  "https://rag-chatbot-frontend.onrender.com"
-];
-
 app.use(
   cors({
     origin: allowedOrigins,
