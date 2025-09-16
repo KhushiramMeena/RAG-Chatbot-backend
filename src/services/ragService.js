@@ -29,7 +29,7 @@ const processQuery = async (query, sessionId, sessionHistory = []) => {
       console.log("No similar documents found, generating general AI response");
       // Generate AI response even without relevant articles
       const result = await generateResponse(query, [], sessionHistory);
-      
+
       const finalResult = {
         ...result,
         query: query,
@@ -37,7 +37,7 @@ const processQuery = async (query, sessionId, sessionHistory = []) => {
         timestamp: new Date().toISOString(),
         cached: false,
         sources: result.sources || [],
-        note: "No relevant news articles found, but here's an AI-generated response"
+        note: "No relevant news articles found, but here's an AI-generated response",
       };
 
       // Cache the result
